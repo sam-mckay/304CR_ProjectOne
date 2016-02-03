@@ -4,32 +4,119 @@ using System.Collections.Generic;
 
 public class AI_AGENT_CONTROLLER : MonoBehaviour
 {
+    //public vars
     public Vector2 startVec = new Vector2(0,0);
     public Vector2 destinationVec = new Vector2(0,0);
-    public GameObject pathNode;
-    public GameObject wallNode;
-
+    public Transform pathNode;
+    public Transform wallNode;
+    public bool randomGen;
+    public int width = 0;
+    public int height = 0;
     public List<Vector2> walls;
-	// Use this for initialization
-	void Start ()
+
+    //private vars
+    LinkedList<Location> route;
+    LinkedListNode<Location> routePos;
+    bool isDone = false;
+    // Use this for initialization
+    void Start ()
     {
-        var grid = new SqaureGrid(10, 10);
+        var grid = new SqaureGrid(width, height);
+        assembleWalls(grid);
+        //randomise start and destination
+        if (randomGen)
+        {
+            bool isGenerated = false;
+            while (!isGenerated)
+            {
+                int randStartX = Random.Range(0, width);
+                int randStartY = Random.Range(0, height);
+                int randDestX = Random.Range(1, width);
+                int randDestY = Random.Range(1, height);
+                
+                if(!grid.walls.Contains(new Location(randStartX, randStartY)) && !grid.walls.Contains(new Location(randDestX, randDestY)))
+                {
+
+                    startVec = new Vector2(randStartX, randStartY);
+                    destinationVec = new Vector2(randDestX, randDestY);
+                    isGenerated = true;
+                }
+            }
+        }
+        //set locations
         Location start = new Location((int)startVec.x, (int)startVec.y);
         Location destination = new Location((int)destinationVec.x, (int)destinationVec.y);
-        assembleWalls(grid);
+        transform.position = new Vector3(startVec.x, startVec.y,transform.position.z);
+       // this.transform.RotateAround(new Vector3(5.72f, 5.24f, 13.9f), Vector3.left, 90);
+        //
         var astar = new AStar(grid, start, destination);
-        LinkedList<Location> route = generatePath(grid, astar, destination, start);
+        route = generatePath(grid, astar, destination, start);
+        drawBorder();
         drawGrid(grid, astar, route);
-        
+
+        routePos = route.First;
     }
 	
 	// Update is called once per frame
 	void Update ()
     {
-	
+	    
 	}
+    
+    void FixedUpdate()
+    {
+        if (!isDone)
+        {
+            Move();
+        }
+    }
+    
+    void Move()
+    {
+        Vector3 targetPos = new Vector3(routePos.Value.x, routePos.Value.y, transform.position.z);
+        Vector3 velocity = Vector3.zero;
+        //transform.position = Vector3.SmoothDamp(transform.position, targetPos, 0.3f);
+        transform.position = Vector3.Lerp(transform.position, targetPos, 0.3f);
+        if(Mathf.Approximately(transform.position.x,targetPos.x) && Mathf.Approximately(transform.position.y, targetPos.y))
+        {
+            if (routePos == route.Last)
+            {
+                isDone = true;
+            }
+            routePos = routePos.Next;
+            
+        }
+        //this.transform.RotateAround(new Vector3(5.72f, 5.24f, 13.9f), Vector3.left, 90);
+    }
 
-    static void drawGrid(SqaureGrid grid, AStar astar, LinkedList<Location> route)
+    /// <summary>
+    /// Draws the map border
+    /// currently hard coded - needs updating to take into account true size
+    /// </summary>
+    void drawBorder()
+    {
+        Transform wallPart;
+        for(int i = 0; i < 12; i++)
+        {
+            wallPart = (Transform) Instantiate(wallNode, new Vector3(-1 + i, -1, 0), Quaternion.identity);
+            //wallPart.RotateAround(new Vector3(5.72f, 5.24f, 13.9f), Vector3.left, 90);
+
+            wallPart = (Transform)Instantiate(wallNode, new Vector3(-1 + i, width+1, 0), Quaternion.identity);
+            //wallPart.RotateAround(new Vector3(5.72f, 5.24f, 13.9f), Vector3.left, 90);
+
+            wallPart = (Transform)Instantiate(wallNode, new Vector3(-1, -1+i, 0), Quaternion.identity);
+            //wallPart.RotateAround(new Vector3(5.72f, 5.24f, 13.9f), Vector3.left, 90);
+
+            wallPart = (Transform)Instantiate(wallNode, new Vector3(height+1, -1+i, 0), Quaternion.identity);
+            //wallPart.RotateAround(new Vector3(5.72f, 5.24f, 13.9f), Vector3.left, 90);
+
+        }
+        wallPart = (Transform) Instantiate(wallNode, new Vector3(width+1, height+1, 0), Quaternion.identity);
+        //wallPart.RotateAround(new Vector3(5.72f, 5.24f, 13.9f), Vector3.left, 90);
+    }
+
+
+    void drawGrid(SqaureGrid grid, AStar astar, LinkedList<Location> route)
     {
         string gridString = "";
         for (var y = 0; y < 10; y++)
@@ -46,39 +133,19 @@ public class AI_AGENT_CONTROLLER : MonoBehaviour
                 if (grid.walls.Contains(currentLocation))
                 {
                     //show wall at current pos
+                    Transform wallPart = (Transform) Instantiate(wallNode, new Vector3(x, y, 0), Quaternion.identity);
+                   // wallPart.RotateAround(new Vector3(5.72f, 5.24f, 13.9f), Vector3.left, 90);
                     gridString += "#|";
                 }
                 else if(route.Contains(currentLocation))
                 {
+                    Transform wallPart = (Transform)Instantiate(pathNode, new Vector3(x, y, 0), Quaternion.identity);
+                   // wallPart.RotateAround(new Vector3(5.72f, 5.24f, 13.9f), Vector3.left, 90);
                     gridString += "x ";
                 }
-                /*
-                else if (locationPtr.x == x + 1)
-                {
-                    //
-                    gridString += "->";
-                }
-                else if (locationPtr.x == x - 1)
-                {
-                    //
-                    gridString += "<-";
-                }
-                else if (locationPtr.y == y + 1)
-                {
-                    //
-                    gridString += "^ ";
-                }
-                else if (locationPtr.y == y - 1)
-                {
-                    //
-                    gridString += "v ";
-                }
-                */
                 //show if part of rout
                 else
-                {
-                    //Instantiate(pathNode, new Vector3(x, y, 0), Quaternion.identity);
-                    //Debug.Log("X: " + x + " Y: " + y + "*");
+                {   
                     gridString += "* ";
                 }
             }
@@ -90,14 +157,14 @@ public class AI_AGENT_CONTROLLER : MonoBehaviour
     
     LinkedList<Location> generatePath(SqaureGrid grid, AStar astar, Location destination, Location start)
     {
-        LinkedList<Location> route = new LinkedList<Location>();
+        LinkedList<Location> newRoute = new LinkedList<Location>();
         //Positions
         Location current = destination;
-        route.AddFirst(current);
+        newRoute.AddFirst(current);
         while(!current.Equals(start))
         {
             current = astar.cameFrom[current];
-            route.AddFirst(current);
+            newRoute.AddFirst(current);
         }
 
         //DEBUG
@@ -111,7 +178,7 @@ public class AI_AGENT_CONTROLLER : MonoBehaviour
             routeNode = routeNode.Next;
         }
         */
-        return route;
+        return newRoute;
     }
 
     void assembleWalls(SqaureGrid grid)
