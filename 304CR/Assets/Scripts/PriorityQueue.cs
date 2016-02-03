@@ -4,8 +4,8 @@ using System.Collections.Generic;
 
 public class PriorityQueue<P,V> {
 
-    private SortedDictionary<P, LinkedList<V>> list = new SortedDictionary<P, LinkedList<V>>(); 
-	
+    private SortedDictionary<P, LinkedList<V>> list = new SortedDictionary<P, LinkedList<V>>();
+    public int count=0;
     //add new item to queue
     public void Enqueue(V value, P priority)
     {
@@ -19,6 +19,7 @@ public class PriorityQueue<P,V> {
         }
         //add item to list 
         newItem.AddLast(value);
+        count=list.Count;
     }
     
     //remove first element in queue with the higest priority
@@ -36,6 +37,7 @@ public class PriorityQueue<P,V> {
         {
             list.Remove(key);
         }
+        count = list.Count;
         return res;
     }
 
