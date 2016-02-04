@@ -12,6 +12,7 @@ public class AI_AGENT_CONTROLLER : MonoBehaviour
     public Transform controller;
     public bool randomGen;
     public bool isLoop;
+    public bool isSeamless;
     public int width = 0;
     public int height = 0;
     public List<Vector2> walls;
@@ -30,16 +31,21 @@ public class AI_AGENT_CONTROLLER : MonoBehaviour
         if (randomGen)
         {
             bool isGenerated = false;
+            int randStartX = (int)startVec.x;
+            int randStartY = (int)startVec.y;
             while (!isGenerated)
             {
-                int randStartX = Random.Range(0, width);
-                int randStartY = Random.Range(0, height);
+                if (!isSeamless)
+                {
+                    randStartX = Random.Range(0, width);
+                    randStartY = Random.Range(0, height);
+                }
                 int randDestX = Random.Range(1, width);
                 int randDestY = Random.Range(1, height);
                 
                 if(!grid.walls.Contains(new Location(randStartX, randStartY)) && !grid.walls.Contains(new Location(randDestX, randDestY)))
                 {
-
+                    
                     startVec = new Vector2(randStartX, randStartY);
                     destinationVec = new Vector2(randDestX, randDestY);
                     isGenerated = true;
@@ -101,12 +107,18 @@ public class AI_AGENT_CONTROLLER : MonoBehaviour
     {
         Transform newController = (Transform)Instantiate(controller, this.transform.parent.position, Quaternion.identity);
         Transform newRoute = newController.FindChild("Ball");
-        newRoute.GetComponent<AI_AGENT_CONTROLLER>().isLoop = true;
-        newRoute.GetComponent<AI_AGENT_CONTROLLER>().randomGen = true;
-        newRoute.GetComponent<AI_AGENT_CONTROLLER>().pathNode = pathNode;
-        newRoute.GetComponent<AI_AGENT_CONTROLLER>().wallNode = wallNode;
-        newRoute.GetComponent<AI_AGENT_CONTROLLER>().controller = controller;
-        newRoute.GetComponent<AI_AGENT_CONTROLLER>().walls = walls;
+        AI_AGENT_CONTROLLER newAgent = newRoute.GetComponent<AI_AGENT_CONTROLLER>();
+        newAgent.isLoop = true;
+        newAgent.randomGen = true;
+        newAgent.isSeamless = isSeamless;
+        newAgent.pathNode = pathNode;
+        newAgent.wallNode = wallNode;
+        newAgent.controller = controller;
+        newAgent.walls = walls;
+        if(isSeamless)
+        {
+            newAgent.startVec = new Vector2(destinationVec.x, destinationVec.y);
+        }
         Destroy(this.transform.parent.gameObject);
     }
 
