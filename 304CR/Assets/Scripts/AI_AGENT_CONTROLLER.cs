@@ -9,15 +9,18 @@ public class AI_AGENT_CONTROLLER : MonoBehaviour
     public Vector2 destinationVec = new Vector2(0,0);
     public Transform pathNode;
     public Transform wallNode;
+    public Transform controller;
     public bool randomGen;
+    public bool isLoop;
     public int width = 0;
     public int height = 0;
     public List<Vector2> walls;
-
+    
     //private vars
     LinkedList<Location> route;
     LinkedListNode<Location> routePos;
     bool isDone = false;
+    
     // Use this for initialization
     void Start ()
     {
@@ -47,8 +50,8 @@ public class AI_AGENT_CONTROLLER : MonoBehaviour
         Location start = new Location((int)startVec.x, (int)startVec.y);
         Location destination = new Location((int)destinationVec.x, (int)destinationVec.y);
         transform.position = new Vector3(startVec.x, startVec.y,transform.position.z);
-       // this.transform.RotateAround(new Vector3(5.72f, 5.24f, 13.9f), Vector3.left, 90);
-        //
+       
+
         var astar = new AStar(grid, start, destination);
         route = generatePath(grid, astar, destination, start);
         drawBorder();
@@ -79,14 +82,32 @@ public class AI_AGENT_CONTROLLER : MonoBehaviour
         transform.position = Vector3.Lerp(transform.position, targetPos, 0.3f);
         if(Mathf.Approximately(transform.position.x,targetPos.x) && Mathf.Approximately(transform.position.y, targetPos.y))
         {
-            if (routePos == route.Last)
+            if (routePos == route.Last && !isLoop)
             {
                 isDone = true;
+            }
+            else if (routePos == route.Last && isLoop)
+            {
+                restart();
+                return;
             }
             routePos = routePos.Next;
             
         }
         //this.transform.RotateAround(new Vector3(5.72f, 5.24f, 13.9f), Vector3.left, 90);
+    }
+
+    void restart()
+    {
+        Transform newController = (Transform)Instantiate(controller, this.transform.parent.position, Quaternion.identity);
+        Transform newRoute = newController.FindChild("Ball");
+        newRoute.GetComponent<AI_AGENT_CONTROLLER>().isLoop = true;
+        newRoute.GetComponent<AI_AGENT_CONTROLLER>().randomGen = true;
+        newRoute.GetComponent<AI_AGENT_CONTROLLER>().pathNode = pathNode;
+        newRoute.GetComponent<AI_AGENT_CONTROLLER>().wallNode = wallNode;
+        newRoute.GetComponent<AI_AGENT_CONTROLLER>().controller = controller;
+        newRoute.GetComponent<AI_AGENT_CONTROLLER>().walls = walls;
+        Destroy(this.transform.parent.gameObject);
     }
 
     /// <summary>
@@ -99,23 +120,22 @@ public class AI_AGENT_CONTROLLER : MonoBehaviour
         for(int i = 0; i < 12; i++)
         {
             wallPart = (Transform) Instantiate(wallNode, new Vector3(-1 + i, -1, 0), Quaternion.identity);
-            //wallPart.RotateAround(new Vector3(5.72f, 5.24f, 13.9f), Vector3.left, 90);
+            wallPart.transform.parent = this.transform.parent;
 
             wallPart = (Transform)Instantiate(wallNode, new Vector3(-1 + i, width+1, 0), Quaternion.identity);
-            //wallPart.RotateAround(new Vector3(5.72f, 5.24f, 13.9f), Vector3.left, 90);
+            wallPart.transform.parent = this.transform.parent;
 
             wallPart = (Transform)Instantiate(wallNode, new Vector3(-1, -1+i, 0), Quaternion.identity);
-            //wallPart.RotateAround(new Vector3(5.72f, 5.24f, 13.9f), Vector3.left, 90);
+            wallPart.transform.parent = this.transform.parent;
 
             wallPart = (Transform)Instantiate(wallNode, new Vector3(height+1, -1+i, 0), Quaternion.identity);
-            //wallPart.RotateAround(new Vector3(5.72f, 5.24f, 13.9f), Vector3.left, 90);
+            wallPart.transform.parent = this.transform.parent;
 
         }
         wallPart = (Transform) Instantiate(wallNode, new Vector3(width+1, height+1, 0), Quaternion.identity);
-        //wallPart.RotateAround(new Vector3(5.72f, 5.24f, 13.9f), Vector3.left, 90);
+        wallPart.transform.parent = this.transform.parent;
     }
-
-
+        
     void drawGrid(SqaureGrid grid, AStar astar, LinkedList<Location> route)
     {
         string gridString = "";
@@ -134,13 +154,15 @@ public class AI_AGENT_CONTROLLER : MonoBehaviour
                 {
                     //show wall at current pos
                     Transform wallPart = (Transform) Instantiate(wallNode, new Vector3(x, y, 0), Quaternion.identity);
+                    wallPart.parent = this.transform.parent; 
                    // wallPart.RotateAround(new Vector3(5.72f, 5.24f, 13.9f), Vector3.left, 90);
                     gridString += "#|";
                 }
                 else if(route.Contains(currentLocation))
                 {
                     Transform wallPart = (Transform)Instantiate(pathNode, new Vector3(x, y, 0), Quaternion.identity);
-                   // wallPart.RotateAround(new Vector3(5.72f, 5.24f, 13.9f), Vector3.left, 90);
+                    wallPart.parent = this.transform.parent;
+                    // wallPart.RotateAround(new Vector3(5.72f, 5.24f, 13.9f), Vector3.left, 90);
                     gridString += "x ";
                 }
                 //show if part of rout
