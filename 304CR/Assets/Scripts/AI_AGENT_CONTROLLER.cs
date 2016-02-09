@@ -9,24 +9,30 @@ public class AI_AGENT_CONTROLLER : MonoBehaviour
     public Vector2 destinationVec = new Vector2(0,0);
     public Transform pathNode;
     public Transform wallNode;
+    public Transform forestNode;
+    public Transform visitedNode;
     public Transform controller;
+    public float speed;
     public bool randomGen;
     public bool isLoop;
     public bool isSeamless;
     public int width = 0;
     public int height = 0;
     public List<Vector2> walls;
-    
+    public List<Vector2> forests;
+
     //private vars
     LinkedList<Location> route;
     LinkedListNode<Location> routePos;
     bool isDone = false;
-    
+    float distance = 0;
+    Vector3 previousPos;
     // Use this for initialization
     void Start ()
     {
         var grid = new SqaureGrid(width, height);
         assembleWalls(grid);
+        assembleForests(grid);
         //randomise start and destination
         if (randomGen)
         {
@@ -55,7 +61,7 @@ public class AI_AGENT_CONTROLLER : MonoBehaviour
         //set locations
         Location start = new Location((int)startVec.x, (int)startVec.y);
         Location destination = new Location((int)destinationVec.x, (int)destinationVec.y);
-        transform.position = new Vector3(startVec.x, startVec.y,transform.position.z);
+        transform.position = new Vector3(startVec.x, transform.position.y, startVec.y);
        
 
         var astar = new AStar(grid, start, destination);
@@ -64,6 +70,7 @@ public class AI_AGENT_CONTROLLER : MonoBehaviour
         drawGrid(grid, astar, route);
 
         routePos = route.First;
+        distance = 1.2f;
     }
 	
 	// Update is called once per frame
@@ -74,19 +81,30 @@ public class AI_AGENT_CONTROLLER : MonoBehaviour
     
     void FixedUpdate()
     {
+        Camera firstPersonCamera = this.transform.FindChild("Camera").GetComponent<Camera>();
+        if (firstPersonCamera != null)
+        {
+            Vector3 lookAtPos = transform.position + transform.forward;
+            firstPersonCamera.transform.LookAt(lookAtPos);
+        }
         if (!isDone)
         {
+            
+            distance += speed * Time.deltaTime;
             Move();
         }
+        
     }
     
     void Move()
     {
-        Vector3 targetPos = new Vector3(routePos.Value.x, routePos.Value.y, transform.position.z);
+        Vector3 targetPos = new Vector3(routePos.Value.x, transform.position.y, routePos.Value.y);
         Vector3 velocity = Vector3.zero;
-        //transform.position = Vector3.SmoothDamp(transform.position, targetPos, 0.3f);
-        transform.position = Vector3.Lerp(transform.position, targetPos, 0.3f);
-        if(Mathf.Approximately(transform.position.x,targetPos.x) && Mathf.Approximately(transform.position.y, targetPos.y))
+        
+        
+        transform.position = Vector3.Lerp(previousPos, targetPos, distance);
+        transform.LookAt(targetPos);
+        if (distance>=1)
         {
             if (routePos == route.Last && !isLoop)
             {
@@ -98,24 +116,32 @@ public class AI_AGENT_CONTROLLER : MonoBehaviour
                 return;
             }
             routePos = routePos.Next;
-            
+            distance = 0;
+            previousPos = targetPos;
         }
-        //this.transform.RotateAround(new Vector3(5.72f, 5.24f, 13.9f), Vector3.left, 90);
     }
 
     void restart()
     {
         Transform newController = (Transform)Instantiate(controller, this.transform.parent.position, Quaternion.identity);
         Transform newRoute = newController.FindChild("Ball");
+        Camera newCamera = newRoute.FindChild("Camera").GetComponent<Camera>();
         AI_AGENT_CONTROLLER newAgent = newRoute.GetComponent<AI_AGENT_CONTROLLER>();
+        newCamera.transform.localPosition = this.transform.FindChild("Camera").localPosition;
+        newCamera.tag = "fpCamera";
+        newAgent.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
         newAgent.isLoop = true;
         newAgent.randomGen = true;
         newAgent.isSeamless = isSeamless;
         newAgent.pathNode = pathNode;
         newAgent.wallNode = wallNode;
+        newAgent.forestNode = forestNode;
+        newAgent.visitedNode = visitedNode;
+        newAgent.speed = speed;
         newAgent.controller = controller;
         newAgent.walls = walls;
-        if(isSeamless)
+        newAgent.forests = forests;
+        if (isSeamless)
         {
             newAgent.startVec = new Vector2(destinationVec.x, destinationVec.y);
         }
@@ -131,29 +157,28 @@ public class AI_AGENT_CONTROLLER : MonoBehaviour
         Transform wallPart;
         for(int i = 0; i < 12; i++)
         {
-            wallPart = (Transform) Instantiate(wallNode, new Vector3(-1 + i, -1, 0), Quaternion.identity);
+            //bottom
+            wallPart = (Transform) Instantiate(wallNode, new Vector3(-1 + i, 0, -1), Quaternion.identity);
             wallPart.transform.parent = this.transform.parent;
 
-            wallPart = (Transform)Instantiate(wallNode, new Vector3(-1 + i, width+1, 0), Quaternion.identity);
+            wallPart = (Transform)Instantiate(wallNode, new Vector3(-1 + i, 0, width), Quaternion.identity);
             wallPart.transform.parent = this.transform.parent;
 
-            wallPart = (Transform)Instantiate(wallNode, new Vector3(-1, -1+i, 0), Quaternion.identity);
+            wallPart = (Transform)Instantiate(wallNode, new Vector3(-1, 0, -1 + i), Quaternion.identity);
             wallPart.transform.parent = this.transform.parent;
 
-            wallPart = (Transform)Instantiate(wallNode, new Vector3(height+1, -1+i, 0), Quaternion.identity);
+            wallPart = (Transform)Instantiate(wallNode, new Vector3(height+1, 0, -1 + i), Quaternion.identity);
             wallPart.transform.parent = this.transform.parent;
 
         }
-        wallPart = (Transform) Instantiate(wallNode, new Vector3(width+1, height+1, 0), Quaternion.identity);
-        wallPart.transform.parent = this.transform.parent;
     }
         
     void drawGrid(SqaureGrid grid, AStar astar, LinkedList<Location> route)
     {
         string gridString = "";
-        for (var y = 0; y < 10; y++)
+        for (var y = 0; y <= 10; y++)
         {
-            for (var x = 0; x < 10; x++)
+            for (var x = 0; x <= 10; x++)
             {
                 Location currentLocation = new Location(x, y);
                 Location locationPtr = currentLocation;
@@ -161,21 +186,31 @@ public class AI_AGENT_CONTROLLER : MonoBehaviour
                 {
                     locationPtr = currentLocation;
                 }
+                if (grid.forests.Contains(currentLocation))
+                {
+                    //show forest at current pos
+                    Transform wallPart = (Transform)Instantiate(forestNode, new Vector3(x, 0, y), Quaternion.identity);
+                    wallPart.parent = this.transform.parent;
+                    gridString += "FF";
+                }
                 //show coloured blocks
-                if (grid.walls.Contains(currentLocation))
+                if (route.Contains(currentLocation))
+                {
+                    Transform wallPart = (Transform)Instantiate(pathNode, new Vector3(x, 0, y), Quaternion.identity);
+                    wallPart.parent = this.transform.parent;
+                    gridString += "x ";
+                }
+                else if (grid.walls.Contains(currentLocation))
                 {
                     //show wall at current pos
-                    Transform wallPart = (Transform) Instantiate(wallNode, new Vector3(x, y, 0), Quaternion.identity);
+                    Transform wallPart = (Transform) Instantiate(wallNode, new Vector3(x, 0, y), Quaternion.identity);
                     wallPart.parent = this.transform.parent; 
-                   // wallPart.RotateAround(new Vector3(5.72f, 5.24f, 13.9f), Vector3.left, 90);
-                    gridString += "#|";
+                    gridString += "# ";
                 }
-                else if(route.Contains(currentLocation))
+                else if(astar.cameFrom.ContainsValue(currentLocation))
                 {
-                    Transform wallPart = (Transform)Instantiate(pathNode, new Vector3(x, y, 0), Quaternion.identity);
+                    Transform wallPart = (Transform)Instantiate(visitedNode, new Vector3(x, 0, y), Quaternion.identity);
                     wallPart.parent = this.transform.parent;
-                    // wallPart.RotateAround(new Vector3(5.72f, 5.24f, 13.9f), Vector3.left, 90);
-                    gridString += "x ";
                 }
                 //show if part of rout
                 else
@@ -220,6 +255,18 @@ public class AI_AGENT_CONTROLLER : MonoBehaviour
         foreach(Vector2 wall in walls)
         {
             grid.walls.Add(new Location((int)wall.x, (int)wall.y));
+        }
+    }
+
+    void assembleForests(SqaureGrid grid)
+    {
+        foreach (Vector2 forest in forests)
+        {
+            Location currentLocation = new Location((int)forest.x, (int)forest.y);
+            if (!grid.walls.Contains(currentLocation))
+            {
+                grid.forests.Add(new Location((int)forest.x, (int)forest.y));
+            }            
         }
     }
 }

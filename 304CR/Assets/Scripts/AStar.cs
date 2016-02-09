@@ -3,7 +3,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-
 public interface WeightedGraph<L>
 {
     int cost(Location A, Location B);
@@ -23,6 +22,7 @@ public struct Location
 //To Represent the map
 public class SqaureGrid : WeightedGraph<Location>
 {
+
     public static readonly Location[] DIRS = new[]
     {
         new Location(1,0),
@@ -33,6 +33,7 @@ public class SqaureGrid : WeightedGraph<Location>
 
     int width, height;
     public HashSet<Location> walls = new HashSet<Location>();
+    public HashSet<Location> forests = new HashSet<Location>();
 
     public SqaureGrid(int w, int h)
     {
@@ -63,6 +64,11 @@ public class SqaureGrid : WeightedGraph<Location>
     {
         //add weighting here
         //i.e. water, long grass, hills etc
+        if(forests.Contains(B) || forests.Contains(A))
+        {
+            Debug.Log("RETURNING FOREST");
+            return 500;
+        }
         return 1;
     }
 
