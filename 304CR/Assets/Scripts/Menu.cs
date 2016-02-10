@@ -39,13 +39,17 @@ public class Menu : MonoBehaviour
     {
 	    if(fpCamera == null)
         {
-            fpCamera = GameObject.FindGameObjectWithTag("fpCamera").GetComponent<Camera>();
+            fpCamera = GameObject.FindGameObjectWithTag("aiAgent").GetComponent<AI_AGENT_CONTROLLER>().getCamera();
         }
 	}
 
-    void startDemo()
+    public void startDemo()
     {
         setCosts();
+        AI_AGENT_CONTROLLER agent = GameObject.FindGameObjectWithTag("aiAgent").GetComponent<AI_AGENT_CONTROLLER>();
+        agent.restart();
+        fpCamera = GameObject.FindGameObjectWithTag("fpCamera").GetComponent<Camera>();
+        //TODO: fix camera bug when first person camera selected and "Apply" clicked
     }
 
     Vector2 getMouseGrid()

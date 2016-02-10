@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -20,13 +21,14 @@ public class AI_AGENT_CONTROLLER : MonoBehaviour
     public int height = 0;
     public List<Vector2> walls;
     public List<Vector2> forests;
-
+    public bool isDone = true;
     //private vars
     LinkedList<Location> route;
     LinkedListNode<Location> routePos;
-    bool isDone = false;
+    Camera fpCamera;
     float distance = 0;
     Vector3 previousPos;
+    Slider movementSlider;
     // Use this for initialization
     void Start ()
     {
@@ -71,12 +73,18 @@ public class AI_AGENT_CONTROLLER : MonoBehaviour
 
         routePos = route.First;
         distance = 1.2f;
+
+        //set first person camera in active
+        fpCamera = this.transform.FindChild("Camera").GetComponent<Camera>();
+        fpCamera.gameObject.SetActive(false);
+        //set movement slider
+        movementSlider = GameObject.FindGameObjectWithTag("movementSlider").GetComponent<Slider>();
     }
 	
 	// Update is called once per frame
 	void Update ()
     {
-	    
+        speed = movementSlider.value;
 	}
     
     void FixedUpdate()
@@ -121,14 +129,15 @@ public class AI_AGENT_CONTROLLER : MonoBehaviour
         }
     }
 
-    void restart()
+    public void restart()
     {
         Transform newController = (Transform)Instantiate(controller, this.transform.parent.position, Quaternion.identity);
         Transform newRoute = newController.FindChild("Ball");
         Camera newCamera = newRoute.FindChild("Camera").GetComponent<Camera>();
         AI_AGENT_CONTROLLER newAgent = newRoute.GetComponent<AI_AGENT_CONTROLLER>();
         newCamera.transform.localPosition = this.transform.FindChild("Camera").localPosition;
-        newCamera.tag = "fpCamera";
+        newCamera.gameObject.tag = "fpCamera";
+        newRoute.gameObject.tag = "aiAgent";
         newAgent.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
         newAgent.isLoop = true;
         newAgent.randomGen = true;
@@ -145,7 +154,13 @@ public class AI_AGENT_CONTROLLER : MonoBehaviour
         {
             newAgent.startVec = new Vector2(destinationVec.x, destinationVec.y);
         }
+        newAgent.isDone = false;
         Destroy(this.transform.parent.gameObject);
+    }
+
+    public Camera getCamera()
+    {
+        return fpCamera;
     }
 
     /// <summary>
