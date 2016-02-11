@@ -66,8 +66,8 @@ public class SqaureGrid : WeightedGraph<Location>
         //i.e. water, long grass, hills etc
         if(forests.Contains(B) || forests.Contains(A))
         {
-            Debug.Log("RETURNING FOREST");
-            return 500;
+            Debug.Log("RETURNING FOREST:"+ PlayerPrefs.GetInt(SaveManager.forestCost));
+            return PlayerPrefs.GetInt(SaveManager.forestCost);
         }
         return 1;
     }

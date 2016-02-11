@@ -25,11 +25,11 @@ public class Menu : MonoBehaviour
         roadCost = PlayerPrefs.GetInt(SaveManager.roadCost);
         if (forestCost != 0)
         {
-            forestCostSlider.value = forestCost;
+            forestCost = (int)forestCostSlider.value;
         }
         if (roadCost != 0)
         {
-            roadCostSlider.value = roadCost;
+            PlayerPrefs.SetInt(SaveManager.roadCost, roadCost);
         }
         
     }
@@ -74,8 +74,13 @@ public class Menu : MonoBehaviour
 
     public void setCosts()
     {
+        forestCost = (int)forestCostSlider.value;
+        roadCost = (int)roadCostSlider.value;
+        Debug.Log("NEW COST: " + forestCost);
+
         PlayerPrefs.SetInt(SaveManager.forestCost, forestCost);
         PlayerPrefs.SetInt(SaveManager.roadCost, roadCost);
+        PlayerPrefs.Save();
     }
 
     public void switchCamera()
