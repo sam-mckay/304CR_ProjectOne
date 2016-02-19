@@ -12,7 +12,7 @@ public class Menu : MonoBehaviour
     bool mainCameraOn = true;
     int forestCost;
     int roadCost;
-
+    Vector3 offset;
     /// 0 = wall, 1 = road, 2 = forest
     int nodeType;
 
@@ -34,7 +34,7 @@ public class Menu : MonoBehaviour
         {
             PlayerPrefs.SetInt(SaveManager.roadCost, roadCost);
         }
-        
+        offset = new Vector3(0.5f, 0.0f, 0.5f); 
     }
 	
 	// Update is called once per frame
@@ -44,7 +44,7 @@ public class Menu : MonoBehaviour
         {
             fpCamera = GameObject.FindGameObjectWithTag("aiAgent").GetComponent<AI_AGENT_CONTROLLER>().getCamera();
         }
-        if(Input.GetMouseButtonDown(0))
+        if(Input.GetMouseButtonDown(1))
         {
             Vector3 newObjectPosition = getMouseGrid();
             switch(nodeType)
@@ -81,6 +81,8 @@ public class Menu : MonoBehaviour
         
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
         Vector3 newPosition = ray.origin + (ray.direction*10.0f);
+        
+        newPosition += offset;
         newPosition.x = Mathf.FloorToInt(newPosition.x);
         newPosition.y = Mathf.FloorToInt(newPosition.y);
         newPosition.z = Mathf.FloorToInt(newPosition.z);
