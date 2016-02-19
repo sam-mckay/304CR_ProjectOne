@@ -12,7 +12,10 @@ public class Menu : MonoBehaviour
     bool mainCameraOn = true;
     int forestCost;
     int roadCost;
-    
+
+    /// 0 = wall, 1 = road, 2 = forest
+    int nodeType;
+
     // Use this for initialization
     void Start ()
     {
@@ -41,6 +44,27 @@ public class Menu : MonoBehaviour
         {
             fpCamera = GameObject.FindGameObjectWithTag("aiAgent").GetComponent<AI_AGENT_CONTROLLER>().getCamera();
         }
+        if(Input.GetMouseButtonDown(0))
+        {
+            Vector3 newObjectPosition = getMouseGrid();
+            switch(nodeType)
+            {
+                case 0:
+                    createWall(newObjectPosition);
+                    break;
+                case 1:
+                    createRoad(newObjectPosition);
+                    break;
+                case 2:
+                    createForest(newObjectPosition);
+                    break;
+                default:
+                    Debug.Log("ERROR: OBJECT NOT SELECTED");
+                    break;
+            }
+            AI_AGENT_CONTROLLER player = fpCamera.transform.parent.gameObject.GetComponent<AI_AGENT_CONTROLLER>();
+            player.restart();
+        }
 	}
 
     public void startDemo()
@@ -52,24 +76,34 @@ public class Menu : MonoBehaviour
         //TODO: fix camera bug when first person camera selected and "Apply" clicked
     }
 
-    Vector2 getMouseGrid()
+    Vector3 getMouseGrid()
     {
-        return new Vector2(0,0);
+        
+        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        Vector3 newPosition = ray.origin + (ray.direction*10.0f);
+        newPosition.x = Mathf.FloorToInt(newPosition.x);
+        newPosition.y = Mathf.FloorToInt(newPosition.y);
+        newPosition.z = Mathf.FloorToInt(newPosition.z);
+
+        return newPosition;
     }
 
-    public void createWall()
+    public void createWall(Vector3 newPosition)
     {
-
+        AI_AGENT_CONTROLLER player = fpCamera.transform.parent.gameObject.GetComponent<AI_AGENT_CONTROLLER>();
+        player.walls.Add(new Vector2((int)newPosition.x, (int)newPosition.z));
     }
 
-    public void createForest()
+    public void createForest(Vector3 newPosition)
     {
-
+        AI_AGENT_CONTROLLER player = fpCamera.transform.parent.gameObject.GetComponent<AI_AGENT_CONTROLLER>();
+        player.forests.Add(new Vector2((int)newPosition.x, (int)newPosition.z));
     }
 
-    public void createRoad()
+    public void createRoad(Vector3 newPosition)
     {
-
+        AI_AGENT_CONTROLLER player = fpCamera.transform.parent.gameObject.GetComponent<AI_AGENT_CONTROLLER>();
+        player.roads.Add(new Vector2((int)newPosition.x, (int)newPosition.z));
     }
 
     public void setCosts()
@@ -88,5 +122,10 @@ public class Menu : MonoBehaviour
         mainCameraOn = !mainCameraOn;
         mainCamera.gameObject.SetActive(mainCameraOn);
         fpCamera.gameObject.SetActive(!mainCameraOn);
+    }
+
+    public void selectObject(int objectID)
+    {
+        nodeType = objectID;
     }
 }

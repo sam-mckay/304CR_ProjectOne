@@ -21,6 +21,7 @@ public class AI_AGENT_CONTROLLER : MonoBehaviour
     public int height = 0;
     public List<Vector2> walls;
     public List<Vector2> forests;
+    public List<Vector2> roads;
     public bool isDone = true;
     //private vars
     LinkedList<Location> route;
@@ -282,6 +283,18 @@ public class AI_AGENT_CONTROLLER : MonoBehaviour
             {
                 grid.forests.Add(new Location((int)forest.x, (int)forest.y));
             }            
+        }
+    }
+
+    void assembleRoads(SqaureGrid grid)
+    {
+        foreach (Vector2 road in forests)
+        {
+            Location currentLocation = new Location((int)road.x, (int)road.y);
+            if (!grid.walls.Contains(currentLocation))
+            {
+                grid.roads.Add(new Location((int)road.x, (int)road.y));
+            }
         }
     }
 }

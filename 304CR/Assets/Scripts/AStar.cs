@@ -32,13 +32,18 @@ public class SqaureGrid : WeightedGraph<Location>
     };
 
     int width, height;
+    int forestCost, roadCost; 
     public HashSet<Location> walls = new HashSet<Location>();
     public HashSet<Location> forests = new HashSet<Location>();
+    public HashSet<Location> roads = new HashSet<Location>();
 
     public SqaureGrid(int w, int h)
     {
+        //init vars
         width = w;
         height = h;
+        forestCost = PlayerPrefs.GetInt(SaveManager.forestCost);
+        roadCost = PlayerPrefs.GetInt(SaveManager.roadCost);
     }
 
     bool inBounds(Location currentLocation)
@@ -67,9 +72,15 @@ public class SqaureGrid : WeightedGraph<Location>
         if(forests.Contains(B) || forests.Contains(A))
         {
             Debug.Log("RETURNING FOREST:"+ PlayerPrefs.GetInt(SaveManager.forestCost));
-            return PlayerPrefs.GetInt(SaveManager.forestCost);
+            return forestCost;
         }
-        return 1;
+        if (roads.Contains(B) || roads.Contains(A))
+        {
+            Debug.Log("RETURNING ROAD:" + PlayerPrefs.GetInt(SaveManager.roadCost));
+            return roadCost;
+        }
+        //standard cost
+        return 5;
     }
 
     public IEnumerable<Location> Neighbours(Location currentLocation)
