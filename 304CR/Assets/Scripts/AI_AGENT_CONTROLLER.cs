@@ -10,6 +10,7 @@ public class AI_AGENT_CONTROLLER : MonoBehaviour
     public Vector2 destinationVec = new Vector2(0,0);
     public Transform pathNode;
     public Transform wallNode;
+    public Transform roadNode;
     public Transform forestNode;
     public Transform visitedNode;
     public Transform controller;
@@ -35,6 +36,7 @@ public class AI_AGENT_CONTROLLER : MonoBehaviour
     {
         var grid = new SqaureGrid(width, height);
         assembleWalls(grid);
+        assembleRoads(grid);
         assembleForests(grid);
         //randomise start and destination
         if (randomGen)
@@ -80,6 +82,8 @@ public class AI_AGENT_CONTROLLER : MonoBehaviour
         fpCamera.gameObject.SetActive(false);
         //set movement slider
         movementSlider = GameObject.FindGameObjectWithTag("movementSlider").GetComponent<Slider>();
+
+        isDone = false;
     }
 	
 	// Update is called once per frame
@@ -147,10 +151,12 @@ public class AI_AGENT_CONTROLLER : MonoBehaviour
         newAgent.wallNode = wallNode;
         newAgent.forestNode = forestNode;
         newAgent.visitedNode = visitedNode;
+        newAgent.roadNode = roadNode;
         newAgent.speed = speed;
         newAgent.controller = controller;
         newAgent.walls = walls;
         newAgent.forests = forests;
+        newAgent.roads = roads;
         if (isSeamless)
         {
             newAgent.startVec = new Vector2(destinationVec.x, destinationVec.y);
@@ -209,13 +215,21 @@ public class AI_AGENT_CONTROLLER : MonoBehaviour
                     wallPart.parent = this.transform.parent;
                     gridString += "FF";
                 }
-                //show coloured blocks
+                if (grid.roads.Contains(currentLocation))
+                {
+                    //show road at current pos
+                    Transform wallPart = (Transform)Instantiate(roadNode, new Vector3(x, 0, y), Quaternion.identity);
+                    wallPart.parent = this.transform.parent;
+                    gridString += "# ";
+                }
+                //show path
                 if (route.Contains(currentLocation))
                 {
                     Transform wallPart = (Transform)Instantiate(pathNode, new Vector3(x, 0, y), Quaternion.identity);
                     wallPart.parent = this.transform.parent;
                     gridString += "x ";
                 }
+               
                 else if (grid.walls.Contains(currentLocation))
                 {
                     //show wall at current pos
@@ -228,7 +242,6 @@ public class AI_AGENT_CONTROLLER : MonoBehaviour
                     Transform wallPart = (Transform)Instantiate(visitedNode, new Vector3(x, 0, y), Quaternion.identity);
                     wallPart.parent = this.transform.parent;
                 }
-                //show if part of rout
                 else
                 {   
                     gridString += "* ";
@@ -288,7 +301,7 @@ public class AI_AGENT_CONTROLLER : MonoBehaviour
 
     void assembleRoads(SqaureGrid grid)
     {
-        foreach (Vector2 road in forests)
+        foreach (Vector2 road in roads)
         {
             Location currentLocation = new Location((int)road.x, (int)road.y);
             if (!grid.walls.Contains(currentLocation))
