@@ -3,7 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-public interface WeightedGraph<L>
+public interface WeightedGraph<Location>
 {
     int cost(Location A, Location B);
     IEnumerable<Location> Neighbours(Location currentLocation);
@@ -11,18 +11,19 @@ public interface WeightedGraph<L>
 
 public struct Location
 {
-    public readonly int x, y;
-    public Location(int x, int y)
+    public readonly int x;
+    public readonly int y;
+    public Location(int w, int h)
     {
-        this.x = x;
-        this.y = y;
+        this.x = w;
+        this.y = h;
     }
 }
 
 //To Represent the map
 public class SqaureGrid : WeightedGraph<Location>
 {
-
+    //used to locate neighbours
     public static readonly Location[] DIRS = new[]
     {
         new Location(1,0),
@@ -31,12 +32,16 @@ public class SqaureGrid : WeightedGraph<Location>
         new Location(0,1)
     };
 
-    int width, height;
-    int forestCost, roadCost; 
+    int width;
+    int height;
+    int forestCost;
+    int roadCost; 
+    //for weighting nodes
     public HashSet<Location> walls = new HashSet<Location>();
     public HashSet<Location> forests = new HashSet<Location>();
     public HashSet<Location> roads = new HashSet<Location>();
 
+    //construtor for map grid
     public SqaureGrid(int w, int h)
     {
         //init vars
@@ -46,6 +51,8 @@ public class SqaureGrid : WeightedGraph<Location>
         roadCost = PlayerPrefs.GetInt(SaveManager.roadCost);
     }
 
+    //check whether the Location is on the grid
+    // useful for checkin edge cases as map does not support looping
     bool inBounds(Location currentLocation)
     {
         if(0 <= currentLocation.x && currentLocation.y < width &&
@@ -56,6 +63,9 @@ public class SqaureGrid : WeightedGraph<Location>
         return false;
     }
 
+    //check if terrain can be travelled over 
+    //could be expanded to support more than just walls
+    //i.e. lava, holes 
     bool passable(Location currentLocation)
     {
         if(walls.Contains(currentLocation))
@@ -65,10 +75,9 @@ public class SqaureGrid : WeightedGraph<Location>
         return true;
     }
 
+    //returns the cost of a node dependent on its weight
     public int cost(Location A, Location B)
     {
-        //add weighting here
-        //i.e. water, long grass, hills etc
         if(forests.Contains(B) || forests.Contains(A))
         {
             Debug.Log("RETURNING FOREST:"+ PlayerPrefs.GetInt(SaveManager.forestCost));
@@ -83,11 +92,13 @@ public class SqaureGrid : WeightedGraph<Location>
         return 5;
     }
 
+    //returns each valid neighbour
     public IEnumerable<Location> Neighbours(Location currentLocation)
     {
         foreach (var dir in DIRS)
         {
             Location next = new Location(currentLocation.x + dir.x, currentLocation.y + dir.y);
+            //if next is on the map and is a walkable i.e. not a wall
             if (inBounds(next) && passable(next))
             {
                 yield return next;
@@ -111,7 +122,7 @@ public class AStar : MonoBehaviour
     {
         //Debug.Log("START A STAR");
         //setup variables
-        var frontier = new PriorityQueue<int, Location>();
+        PriorityQueue<int, Location> frontier = new PriorityQueue<int, Location>();
         frontier.Enqueue(startPos, 0);
         cameFrom[startPos] = startPos;
         costSoFar[startPos] = 0;
@@ -126,22 +137,26 @@ public class AStar : MonoBehaviour
             //check if current Node is the Destination Node
             if (current.Equals(destination))
             {
-                break;
+                break;//Destination reached stop searching
             }
 
             foreach (var next in grid.Neighbours(current))
             {
-                //Debug.Log("A STAR FOREACH LOOP");
+                // calculate cost to neighbour
                 int newCost = costSoFar[current] + grid.cost(current, next);
-                //Debug.Log("CONTAINS KEY TEST");
-                if (!costSoFar.ContainsKey(next) || newCost < costSoFar[next])
+                // if its cheaper to get here from this node than previous routes or 
+                //  we haven't checked this neighbour
+                if (newCost < costSoFar[next] || !costSoFar.ContainsKey(next))
                 {
-                    //Debug.Log("CONTAINS KEY");
+                    //update costSoFar
                     costSoFar[next] = newCost;
-                    int priority = newCost + distCalc(next, destination);
+                    //calculate priority
+                    int priority = distCalc(next, destination) + newCost;
+                    //add to frontier
                     frontier.Enqueue(next, priority);
+                    //sent current node as the previous node
+                    //allows us to work our way back through cameFrom to find the route 
                     cameFrom[next] = current;
-                    //Debug.Log("END A STAR LOOP");
                 }
             }
         }
